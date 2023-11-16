@@ -1,0 +1,26 @@
+[pytest]
+asyncio_mode = "auto"
+
+[tool.poetry]
+name = "py-boilingdata"
+version = "0.1.0"
+description = "BoilingData (websockets) client for Python"
+authors = ["Dan Forsberg <dan@boilingdata.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+websockets = "^12.0"
+boto3 = "^1.29.1"
+asyncio = "^3.4.3"
+botocore = "^1.32.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest-asyncio = "^0.21.1"
+pytest = "^7.4.3"
+black = "^23.11.0"
+pylint = "^3.0.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
