@@ -1,5 +1,9 @@
 # BoilingData Client for Python
 
+```shell
+pip install git+https://github.com/boilingdata/py-boilingdata
+```
+
 A python client for sending SQL queries and receive results from BoilingData WebSockets API.
 
 - This package uses `asyncio` and `threads` to make the `websocket.WebSocketApp()` run on the background.
@@ -31,12 +35,13 @@ loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
 ```
 
-## Build and Install
+## Development
 
 ```shell
 make install
 make build
-# make lint
-# make test
+make lint
+make test
+make run
 pip install dist/py_boilingdata-*-py3-none-any.whl
 ```
