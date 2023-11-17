@@ -13,3 +13,6 @@ lint: format
 
 build:
 	poetry build
+
+run:
+	poetry run python main.py
