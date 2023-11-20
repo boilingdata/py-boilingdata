@@ -36,6 +36,10 @@ async def main():
 asyncio.new_event_loop().run_until_complete(main())
 ```
 
+## Notebook
+
+Please see [bolingdata.ipynb](boilingdata.ipynb)
+
 ## Development
 
 ```shell
