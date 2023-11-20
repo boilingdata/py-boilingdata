@@ -19,12 +19,17 @@ from py_boilingdata import BoilingData
 async def main():
     boiling = BoilingData()
     await boiling.connect()
-    q = "SELECT first_name, email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 10"
-    resp = await boiling.execute(q)
-    print(resp)
+    results = await boiling.execute(
+        """
+        SELECT first_name, email
+          FROM parquet_scan('s3://boilingdata-demo/test.parquet')
+         LIMIT 2
+        """
+    )
+    print(results)
+    await boiling.close()
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
+asyncio.new_event_loop().run_until_complete(main())
 ```
 
 ## Development
