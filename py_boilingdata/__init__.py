@@ -38,7 +38,7 @@ BOILING_SEARCH_TERMS = [
 class BoilingData:
     """Run SQL with BoilingData and local DuckDB"""
 
-    def __init__(self, log_level=logging.DEBUG):
+    def __init__(self, log_level=logging.INFO):
         logging.basicConfig()
         self.log_level = log_level
         self.logger = logging.getLogger("BoilingData")
@@ -116,7 +116,7 @@ class BoilingData:
 class BoilingDataConnection:
     """Create authenticated WebSocket connection to BoilingData"""
 
-    def __init__(self, region=AWS_REGION, log_level=logging.ERROR):
+    def __init__(self, region=AWS_REGION, log_level=logging.INFO):
         self.log_level = log_level
         self.logger = logging.getLogger("BoilingDataConnection")
         self.logger.setLevel(self.log_level)
@@ -207,6 +207,13 @@ class BoilingDataConnection:
             log_level = msg.get("logLevel")
             if log_level == "ERROR":
                 raise Exception(msg.get("logMessage"))
+            if log_level == "INFO":
+                self.logger.info(msg.get("logMessage"))
+        if msg_type == "INFO" and self.log_level == "INFO":
+            self.logger.info(msg.get("info"))
+        if msg_type == "LAMBDA_EVENT":
+            lambda_event = msg.get("lambdaEvent")
+            self.logger.info(lambda_event)
         if msg_type != "DATA":
             return
         req = self.requests.get(reqId)
