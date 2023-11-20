@@ -15,7 +15,7 @@ from py_boilingdata.data_queue import DataQueue
 
 # Preview environment in eu-west-1
 # TODO: Put in dotenv for example
-AWS_REGION = "eu-west-1"
+AWS_REGION = os.getenv("AWS_REGION", "eu-west-1")
 USER_POOL_ID = "eu-west-1_0GLV9KO1p"
 CLIENT_ID = "37f44ql7bp5p8fpk5qrh2sgu8"
 # BOILING_WSS_URL = "wss://4rpyi2ae3f.execute-api.eu-west-1.amazonaws.com/prodbd/"
@@ -134,8 +134,8 @@ class BoilingDataConnection:
         self.ws_app = None
         self.ws_trace = False
         self.bd_is_open = False
-        self.id_client = boto3.client("cognito-identity")
-        self.idp_client = boto3.client("cognito-idp")
+        self.id_client = boto3.client("cognito-identity", region_name=self.region)
+        self.idp_client = boto3.client("cognito-idp", region_name=self.region)
         self.requests = dict()
 
     def _get_auth_headers(self):
