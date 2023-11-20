@@ -38,7 +38,8 @@ BOILING_SEARCH_TERMS = [
 class BoilingData:
     """Run SQL with BoilingData and local DuckDB"""
 
-    def __init__(self, log_level=logging.ERROR):
+    def __init__(self, log_level=logging.DEBUG):
+        logging.basicConfig()
         self.log_level = log_level
         self.logger = logging.getLogger("BoilingData")
         self.logger.setLevel(self.log_level)
@@ -46,6 +47,7 @@ class BoilingData:
         self.conn = duckdb.connect(":memory:")
 
     async def _populate(self):
+        self.logger.debug("Creating local boilingdata data catalog")
         self.conn.execute("ATTACH ':memory:' AS boilingdata;")
         self.conn.execute("SET search_path='memory,boilingdata';")
         # Boiling specific table, contains data shares
@@ -53,6 +55,7 @@ class BoilingData:
         tables = await self.execute(q, None, True)
         if tables:
             for table in tables:
+                self.logger.debug(f"Creating table {table}")
                 self.conn.execute(table)
 
     def _is_boiling_execute(self, sql):
@@ -98,6 +101,7 @@ class BoilingData:
 
     async def execute(self, sql, cb=None, force_boiling=False):
         """Send SQL Query to Boiling or run locally"""
+        sql = sql.replace("\n", " ")
         if not force_boiling and not self._is_boiling_execute(sql):
             return self.conn.execute(sql).fetchall()
         fut = await self.bd_conn.bd_execute(sql, cb)
@@ -199,7 +203,10 @@ class BoilingDataConnection:
         if not reqId:
             return
         msg_type = msg.get("messageType")
-        # TODO: Store statistics sent from Boiling (INFO messages)
+        if msg_type == "LOG_MESSAGE":
+            log_level = msg.get("logLevel")
+            if log_level == "ERROR":
+                raise Exception(msg.get("logMessage"))
         if msg_type != "DATA":
             return
         req = self.requests.get(reqId)
@@ -252,6 +259,7 @@ class BoilingDataConnection:
         """Connect to BoilingData WebSocket API"""
         if self.websocket is not None:
             raise Exception("WebSocket already exists")
+        self.logger.info("Connecting")
         self.websocket = websocket.WebSocket()
         websocket.enableTrace(self.ws_trace)
         auth_headers = self._get_auth_headers()

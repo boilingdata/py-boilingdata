@@ -1,10 +1,9 @@
 import asyncio
 from py_boilingdata import BoilingData
 
-boiling = BoilingData()
-
 
 async def main():
+    boiling = BoilingData()
     await boiling.connect()
     results = await boiling.execute(
         """
@@ -17,5 +16,4 @@ async def main():
     await boiling.close()
 
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
+asyncio.new_event_loop().run_until_complete(main())

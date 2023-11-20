@@ -39,8 +39,16 @@ async def test_local_tables():
 
 
 @pytest.mark.asyncio
-async def test_bd_query_cb():
+async def test_bd_query():
     """Small response from Boiling"""
+    q = "SELECT first_name, email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 1"
+    data = await boiling.execute(q)  # awaits as lont as the result is available
+    assert data == [{"email": "ajordan0@com.com", "first_name": "Amanda"}]
+
+
+@pytest.mark.asyncio
+async def test_bd_query_cb():
+    """Small response from Boiling with callback"""
     global data
     data = None
 
@@ -49,17 +57,11 @@ async def test_bd_query_cb():
         global data
         data = resp
 
+    q = "SELECT email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 2"
+    await boiling.execute(q, cb)  # only awaits as long as the request is dispatched
     q = "SELECT first_name, email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 1"
     await boiling.execute(q, cb)  # only awaits as long as the request is dispatched
-    await asyncio.sleep(5)
-    assert data == [{"email": "ajordan0@com.com", "first_name": "Amanda"}]
-
-
-@pytest.mark.asyncio
-async def test_bd_query():
-    """Small response from Boiling"""
-    q = "SELECT first_name, email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 1"
-    data = await boiling.execute(q)  # awaits as lont as the result is available
+    await asyncio.sleep(5)  # let them race...
     assert data == [{"email": "ajordan0@com.com", "first_name": "Amanda"}]
 
 

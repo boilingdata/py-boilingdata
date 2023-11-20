@@ -1,6 +1,3 @@
-from pprint import pprint
-
-
 class DataQueue:
     def __init__(self, requestId, callback, fut=None):
         self.requestId = requestId
@@ -21,7 +18,6 @@ class DataQueue:
         if self.parts_done == True:
             return True
         msg = self.data[0]
-        # print(msg)
         totalBatches = msg.get("totalBatches")
         totalSubBatches = msg.get("totalSubBatches")
         totalSplitSerials = msg.get("totalSplitSerials")
@@ -72,7 +68,6 @@ class DataQueue:
                         # print(f"\tsplits: {len(value.get('splits'))}/{totalSplits}")
                         if len(value.get("splits")) < totalSplits:
                             return False
-        # pprint(self.batchCounters)
         self.parts_done = True
         return True
 
@@ -99,10 +94,8 @@ class DataQueue:
             raise Exception("Deleted queue!")
         data = self._compile()
         if self.callback:
-            # print(f"CALLING CALLBACK {data}")
             self.callback({"data": data, "requestId": self.requestId})
         if self.fut:
-            # print(f"SETTING FUT RESULT: {data}")
             self.fut.set_result(data)
 
     ##
