@@ -1,8 +1,11 @@
 import asyncio
 from py_boilingdata import BoilingData
+from dotenv import load_dotenv
 
-# os.environ["BD_USERNAME"] = "yourBoilingAccountUsername"
-# os.environ["BD_PASSWORD"] = "yourBoilingPassword"
+load_dotenv()  # take environment variables from .env
+# AWS_REGION  = "eu-west-1"
+# BD_USERNAME = "yourBoilingAccountUsername"
+# BD_PASSWORD = "yourBoilingPassword"
 
 
 async def main():
