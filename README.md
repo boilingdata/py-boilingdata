@@ -13,8 +13,12 @@ A python client for sending SQL queries and receive results from BoilingData Web
 > **NOTE:** This package is considered experimental. Feel free to suggest improvements, especially on how to make this module easy to use.
 
 ```python
+import os
 import asyncio
 from py_boilingdata import BoilingData
+
+# os.environ["BD_USERNAME"] = "yourBoilingAccountUsername"
+# os.environ["BD_PASSWORD"] = "yourBoilingPassword"
 
 async def main():
     boiling = BoilingData()

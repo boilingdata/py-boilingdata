@@ -1,6 +1,9 @@
 import asyncio
 from py_boilingdata import BoilingData
 
+# os.environ["BD_USERNAME"] = "yourBoilingAccountUsername"
+# os.environ["BD_PASSWORD"] = "yourBoilingPassword"
+
 
 async def main():
     boiling = BoilingData()

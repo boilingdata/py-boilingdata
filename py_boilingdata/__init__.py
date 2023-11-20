@@ -189,6 +189,8 @@ class BoilingDataConnection:
         return self.aws_creds
 
     async def _ws_send(self, msg):
+        if not self.bd_is_open:
+            await self.connect()
         self.logger.debug(f"> {msg}")
         return self.ws_app.send(msg)
 
@@ -204,11 +206,12 @@ class BoilingDataConnection:
             return
         msg_type = msg.get("messageType")
         if msg_type == "LOG_MESSAGE":
+            message = msg.get("logMessage")
             log_level = msg.get("logLevel")
             if log_level == "ERROR":
-                raise Exception(msg.get("logMessage"))
+                raise Exception(message)
             if log_level == "INFO":
-                self.logger.info(msg.get("logMessage"))
+                self.logger.info(message)
         if msg_type == "INFO" and self.log_level == "INFO":
             self.logger.info(msg.get("info"))
         if msg_type == "LAMBDA_EVENT":

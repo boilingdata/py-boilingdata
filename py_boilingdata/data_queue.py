@@ -49,23 +49,17 @@ class DataQueue:
                     subBatch["data"] = data
             else:
                 batchCounter["data"] = data
-        # print(
-        #     f"RequestId {self.requestId}:\n\t"
-        #     + f"Batches {len(self.batchCounters)}/{totalBatches}"
-        # )
         self.have_new_messages = False
         if len(self.batchCounters) < totalBatches:
             return False
         for value in self.batchCounters.values():
             totalSubBatches = value.get("totalSubBatches")
             if totalSubBatches:
-                # print(f"\tsubBatches: {len(value.get('subBatches'))}/{totalSubBatches}")
                 if len(value.get("subBatches")) < totalSubBatches:
                     return False
                 for value in value.get("subBatches").values():
                     totalSplits = value.get("totalSplits")
                     if totalSplits:
-                        # print(f"\tsplits: {len(value.get('splits'))}/{totalSplits}")
                         if len(value.get("splits")) < totalSplits:
                             return False
         self.parts_done = True
