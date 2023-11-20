@@ -291,6 +291,7 @@ class BoilingDataConnection:
 
     async def close(self):
         """Close WebSocket connection to Boiling"""
+        self.bd_is_open = False
         if self.ws_app:
             self.ws_app.close()
         if self.websocket:
