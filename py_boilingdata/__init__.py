@@ -175,7 +175,7 @@ class BoilingDataConnection:
         return self.aws_creds
 
     async def _ws_send(self, msg):
-        print(f"> {msg}")
+        # print(f"> {msg}")
         return self.ws_app.send(msg)
 
     def _on_open(self, ws_app):
@@ -183,7 +183,7 @@ class BoilingDataConnection:
         self.bd_is_open = True
 
     def _on_msg(self, ws_app, data):
-        print(f"< {data}")
+        # print(f"< {data}")
         msg = json.loads(data)
         reqId = msg.get("requestId")
         if not reqId:
