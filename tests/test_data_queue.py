@@ -1,4 +1,5 @@
 import json
+import asyncio
 import pytest
 from pprint import pprint
 from py_boilingdata.data_queue import DataQueue

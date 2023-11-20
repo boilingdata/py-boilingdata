@@ -2,6 +2,7 @@
 import pytest
 import pytest_asyncio
 import asyncio
+from pprint import pprint
 from py_boilingdata import BoilingData
 
 boiling = BoilingData()
@@ -15,52 +16,51 @@ boiling = BoilingData()
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def manage_boiling_connection():
     await boiling.connect()
-    await boiling.populate()
     yield None
     await boiling.close()
 
 
-# @pytest.mark.asyncio
-# async def test_local_query():
-#     """Simple SQL statement runs locally with embedded DuckDB"""
-
-#     def cb(data):
-#         assert data == [(1,)]
-
-#     await boiling.execute("SELECT 1;", cb)
+@pytest.mark.asyncio
+async def test_local_query():
+    """Simple SQL statement runs locally with embedded DuckDB"""
+    data = await boiling.execute("SELECT 1;")
+    assert data == [(1,)]
 
 
-# @pytest.mark.asyncio
-# async def test_local_tables():
-#     """We should have Boiling Data Catalog entries"""
+@pytest.mark.asyncio
+async def test_local_tables():
+    """We should have Boiling Data Catalog entries"""
+    resp = await boiling.execute("SHOW TABLES;")
+    assert resp == [
+        ("demo_full",),
+        ("taxi_locations",),
+        ("taxi_locations_limited",),
+    ]
 
-#     # Note: This depends on the used BD_USERNAME but also data sets shared
-#     def cb(resp):
-#         assert resp == [
-#             ("demo_full",),
-#             ("taxi_locations",),
-#             ("taxi_locations_limited",),
-#         ]
 
-#     await boiling.execute("SHOW TABLES;", cb)
+@pytest.mark.asyncio
+async def test_bd_query_cb():
+    """Small response from Boiling"""
+    global data
+    data = None
+
+    # Note: This depends on the used BD_USERNAME but also data sets shared
+    def cb(resp):
+        global data
+        data = resp
+
+    q = "SELECT first_name, email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 1"
+    await boiling.execute(q, cb)  # only awaits as long as the request is dispatched
+    await asyncio.sleep(5)
+    assert data == [{"email": "ajordan0@com.com", "first_name": "Amanda"}]
 
 
 @pytest.mark.asyncio
 async def test_bd_query():
     """Small response from Boiling"""
-
-    # Note: This depends on the used BD_USERNAME but also data sets shared
-    def cb(resp):
-        assert resp == [{"email": "ajordan0@com.com", "first_name": "Amanda"}]
-
     q = "SELECT first_name, email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 1"
-    await boiling.execute(q, cb)
-    assert True
-    # counter = 0
-    # while not done and counter < 10:
-    #     await asyncio.sleep(1)
-    #     counter = counter + 1
-    #     print(".")
+    data = await boiling.execute(q)  # awaits as lont as the result is available
+    assert data == [{"email": "ajordan0@com.com", "first_name": "Amanda"}]
 
 
 # @pytest.mark.asyncio

@@ -2,9 +2,10 @@ from pprint import pprint
 
 
 class DataQueue:
-    def __init__(self, requestId, callback):
+    def __init__(self, requestId, callback, fut=None):
         self.requestId = requestId
         self.callback = callback
+        self.fut = fut
         self.data = []
         self.batchCounters = dict()
         self.parts_done = False
@@ -12,7 +13,7 @@ class DataQueue:
         self.is_deleted = False
         return
 
-    def have_all_parts(self):
+    def _have_all_parts(self):
         if self.is_deleted:
             raise Exception("Deleted queue!")
         if not self.have_new_messages:
@@ -75,29 +76,7 @@ class DataQueue:
         self.parts_done = True
         return True
 
-    def push(self, msg):
-        if self.is_deleted:
-            raise Exception("Deleted queue!")
-        self.data.append(msg)
-        self.have_new_messages = True
-        if self.have_all_parts():
-            self.notify()
-        return
-
-    # Prefer the callback method
-    def get_data(self):
-        if self.is_deleted:
-            raise Exception("Deleted queue!")
-        if self.is_done():
-            return self.compile()
-        return None
-
-    def is_done(self):
-        if self.is_deleted:
-            raise Exception("Deleted queue!")
-        return self.parts_done == True or self.have_all_parts()
-
-    def compile(self):
+    def _compile(self):
         if self.is_deleted:
             raise Exception("Deleted queue!")
         data = []
@@ -115,12 +94,42 @@ class DataQueue:
                                 data.extend(value3["data"])
         return data
 
-    def notify(self):
+    def _notify(self):
         if self.is_deleted:
             raise Exception("Deleted queue!")
-        data = self.compile()
+        data = self._compile()
         if self.callback:
+            # print(f"CALLING CALLBACK {data}")
             self.callback({"data": data, "requestId": self.requestId})
+        if self.fut:
+            # print(f"SETTING FUT RESULT: {data}")
+            self.fut.set_result(data)
+
+    ##
+    ## public
+    ##
+
+    def push(self, msg):
+        if self.is_deleted:
+            raise Exception("Deleted queue!")
+        self.data.append(msg)
+        self.have_new_messages = True
+        if self._have_all_parts():
+            self._notify()  # callback and future
+        return
+
+    # Prefer the callback method
+    def get_data(self):
+        if self.is_deleted:
+            raise Exception("Deleted queue!")
+        if self.is_done():
+            return self._compile()
+        return None
+
+    def is_done(self):
+        if self.is_deleted:
+            raise Exception("Deleted queue!")
+        return self.parts_done == True or self._have_all_parts()
 
     def delete(self):
         self.is_deleted = True

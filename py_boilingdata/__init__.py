@@ -1,13 +1,12 @@
 """BoilingData Client"""
-import os, json, uuid, time
-import rel
-import duckdb
+import os, json, uuid
+import logging
 import threading
+import duckdb
 import websocket
 import boto3
 import asyncio
 import botocore.auth
-from pprint import pprint
 from botocore.exceptions import NoCredentialsError
 from botocore.awsrequest import AWSRequest
 from botocore.credentials import Credentials
@@ -39,22 +38,22 @@ BOILING_SEARCH_TERMS = [
 class BoilingData:
     """Run SQL with BoilingData and local DuckDB"""
 
-    def __init__(self):
-        self.bd_conn = BoilingDataConnection()
+    def __init__(self, log_level=logging.ERROR):
+        self.log_level = log_level
+        self.logger = logging.getLogger("BoilingData")
+        self.logger.setLevel(self.log_level)
+        self.bd_conn = BoilingDataConnection(log_level=self.log_level)
         self.conn = duckdb.connect(":memory:")
 
-    async def populate(self):
+    async def _populate(self):
         self.conn.execute("ATTACH ':memory:' AS boilingdata;")
         self.conn.execute("SET search_path='memory,boilingdata';")
-        # Boiling specific "information_schema" table
+        # Boiling specific table, contains data shares
         q = "SELECT * FROM information_schema.create_tables_statements"
-
-        def cb(bd_tables):
-            if bd_tables:
-                for table in bd_tables:
-                    self.conn.execute(table)
-
-        await self.bd_conn.bd_execute(q, cb)
+        tables = await self.execute(q, None, True)
+        if tables:
+            for table in tables:
+                self.conn.execute(table)
 
     def _is_boiling_execute(self, sql):
         ## 1) Get all Boiling tables so we know what to intercept
@@ -91,22 +90,32 @@ class BoilingData:
     async def connect(self):
         """Connect to BoilingData"""
         await self.bd_conn.connect()
+        await self._populate()  # get catalog entries
 
     async def close(self):
         """Close WebSocket connection to Boiling"""
         await self.bd_conn.close()
 
-    async def execute(self, sql, cb):
+    async def execute(self, sql, cb=None, force_boiling=False):
         """Send SQL Query to Boiling or run locally"""
-        if not self._is_boiling_execute(sql):
+        if not force_boiling and not self._is_boiling_execute(sql):
             return self.conn.execute(sql).fetchall()
-        return await self.bd_conn.bd_execute(sql, cb)
+        fut = await self.bd_conn.bd_execute(sql, cb)
+        if cb is not None:
+            return
+        # TODO: Get rid of this while loop?!
+        while not fut.done():
+            await asyncio.sleep(0.005)
+        return fut.result()
 
 
 class BoilingDataConnection:
     """Create authenticated WebSocket connection to BoilingData"""
 
-    def __init__(self, region=AWS_REGION):
+    def __init__(self, region=AWS_REGION, log_level=logging.ERROR):
+        self.log_level = log_level
+        self.logger = logging.getLogger("BoilingDataConnection")
+        self.logger.setLevel(self.log_level)
         self.region = region
         self.username = os.getenv("BD_USERNAME", "")
         self.password = os.getenv("BD_PASSWORD", "")
@@ -115,6 +124,7 @@ class BoilingDataConnection:
                 "Missing username (BD_USERNAME) and/or "
                 + "password (BD_PASSWORD) environment variable(s)"
             )
+        self.wsConnectTimeoutS = 10
         self.websocket = None
         self.aws_creds = None
         self.ws_app = None
@@ -150,10 +160,10 @@ class BoilingDataConnection:
             )
             return response["AuthenticationResult"]
         except self.idp_client.exceptions.NotAuthorizedException as e:
-            print("The username or password is incorrect.")
+            self.logger.error("The username or password is incorrect.")
             raise e
         except NoCredentialsError as e:
-            print("Credentials not available.")
+            self.logger.error("Credentials not available.")
             raise e
 
     def _get_credentials(self):
@@ -175,20 +185,21 @@ class BoilingDataConnection:
         return self.aws_creds
 
     async def _ws_send(self, msg):
-        # print(f"> {msg}")
+        self.logger.debug(f"> {msg}")
         return self.ws_app.send(msg)
 
     def _on_open(self, ws_app):
-        print("WS OPEN")
+        self.logger.info("WS OPEN")
         self.bd_is_open = True
 
     def _on_msg(self, ws_app, data):
-        # print(f"< {data}")
+        self.logger.debug(f"< {data}")
         msg = json.loads(data)
         reqId = msg.get("requestId")
         if not reqId:
             return
         msg_type = msg.get("messageType")
+        # TODO: Store statistics sent from Boiling (INFO messages)
         if msg_type != "DATA":
             return
         req = self.requests.get(reqId)
@@ -201,32 +212,41 @@ class BoilingDataConnection:
             del self.requests[reqId]
 
     def _on_error(self, ws_app, error):
-        print(f"WS ERROR: {error}")
+        self.logger.error(f"WS ERROR: {error}")
 
     def _on_close(self, ws_app, code, msg):
-        print(f"WS CLOSE: {code} {msg}")
-
-    ##
-    ## public
-    ##
+        self.logger.info(f"WS CLOSE: {code} {msg}")
+        self.is_open = False
 
     def _all_messages_received(self, event):
         requestId = event["requestId"]
         data = event["data"]
         cb = self.requests.get(requestId)
-        cb["callback"](data)
+        cb.get("callback")(data) if cb.get("callback") else None
+        cb.get("fut").set_result(data) if cb.get("fut") else None
+
+    ##
+    ## public
+    ##
 
     async def bd_execute(self, sql, cb):
-        if self.bd_is_open is not True:
+        if not self.bd_is_open:
+            await self.connect()
+        if not self.bd_is_open:
             raise Exception("No Boiling connection")
         reqId = uuid.uuid4().hex
         body = '{"sql":"' + sql + '","requestId":"' + reqId + '"}'
+        loop = asyncio.get_running_loop()
+        fut = loop.create_future()
         self.requests[reqId] = {
-            "q": DataQueue(reqId, self._all_messages_received),
+            "q": DataQueue(reqId, self._all_messages_received, fut),
+            "sql": sql,
             "reqId": reqId,
             "callback": cb,
+            "future": fut,
         }
         await self._ws_send(body)
+        return fut
 
     async def connect(self):
         """Connect to BoilingData WebSocket API"""
@@ -247,7 +267,7 @@ class BoilingDataConnection:
         wst.daemon = True
         wst.start()
         timeoutS = 1
-        while self.bd_is_open is not True and timeoutS < 10:
+        while not self.bd_is_open and timeoutS < self.wsConnectTimeoutS:
             await asyncio.sleep(1)
             timeoutS = timeoutS + 1
 
