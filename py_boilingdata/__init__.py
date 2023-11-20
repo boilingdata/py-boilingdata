@@ -212,7 +212,7 @@ class BoilingDataConnection:
                 raise Exception(message)
             if log_level == "INFO":
                 self.logger.info(message)
-        if msg_type == "INFO" and self.log_level == "INFO":
+        if msg_type == "INFO" and self.log_level == logging.INFO:
             self.logger.info(msg.get("info"))
         if msg_type == "LAMBDA_EVENT":
             lambda_event = msg.get("lambdaEvent")
