@@ -1,5 +1,8 @@
 import asyncio
 import pytest
+from dotenv import load_dotenv
+
+load_dotenv()  # take environment variables from .env
 
 
 @pytest.fixture(scope="session")

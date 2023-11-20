@@ -15,7 +15,7 @@ from py_boilingdata.data_queue import DataQueue
 
 # Preview environment in eu-west-1
 # TODO: Put in dotenv for example
-AWS_REGION = os.getenv("AWS_REGION", "eu-west-1")
+AWS_REGION = os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "eu-west-1"))
 USER_POOL_ID = "eu-west-1_0GLV9KO1p"
 CLIENT_ID = "37f44ql7bp5p8fpk5qrh2sgu8"
 # BOILING_WSS_URL = "wss://4rpyi2ae3f.execute-api.eu-west-1.amazonaws.com/prodbd/"
@@ -40,9 +40,9 @@ class BoilingData:
 
     def __init__(self, log_level=logging.INFO):
         logging.basicConfig()
-        self.log_level = log_level
         self.logger = logging.getLogger("BoilingData")
-        self.logger.setLevel(self.log_level)
+        self.logger.setLevel(log_level)
+        self.log_level = self.logger.level
         self.bd_conn = BoilingDataConnection(log_level=self.log_level)
         self.conn = duckdb.connect(":memory:")
 
@@ -117,10 +117,12 @@ class BoilingDataConnection:
     """Create authenticated WebSocket connection to BoilingData"""
 
     def __init__(self, region=AWS_REGION, log_level=logging.INFO):
-        self.log_level = log_level
         self.logger = logging.getLogger("BoilingDataConnection")
-        self.logger.setLevel(self.log_level)
+        self.logger.setLevel(log_level)
+        self.log_level = self.logger.level
         self.region = region
+        if self.region == "":
+            raise ValueError("Missing AWS region")
         self.username = os.getenv("BD_USERNAME", "")
         self.password = os.getenv("BD_PASSWORD", "")
         if self.username == "" or self.password == "":
@@ -166,8 +168,15 @@ class BoilingDataConnection:
         except self.idp_client.exceptions.NotAuthorizedException as e:
             self.logger.error("The username or password is incorrect.")
             raise e
+        except self.idp_client.exceptions.UserNotConfirmedException:
+            self.logger.error("You need to verify email address (e.g. with BDCLI)")
+            raise e
         except NoCredentialsError as e:
+            self.logger.error(e)
             self.logger.error("Credentials not available.")
+            raise e
+        except:
+            self.logger.error(e)
             raise e
 
     def _get_credentials(self):

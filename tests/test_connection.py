@@ -57,7 +57,7 @@ async def test_bd_query_cb():
         global data
         data = resp
 
-    q = "SELECT email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 2"
+    q = "SELECT email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 1"
     await boiling.execute(q, cb)  # only awaits as long as the request is dispatched
     q = "SELECT first_name, email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 1"
     await boiling.execute(q, cb)  # only awaits as long as the request is dispatched
