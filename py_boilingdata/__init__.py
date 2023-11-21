@@ -240,7 +240,7 @@ class BoilingDataConnection:
 
     def _on_close(self, ws_app, code, msg):
         self.logger.info(f"WS CLOSE: {code} {msg}")
-        self.is_open = False
+        self.bd_is_open = False
 
     def _all_messages_received(self, event):
         requestId = event["requestId"]
@@ -274,8 +274,9 @@ class BoilingDataConnection:
 
     async def connect(self):
         """Connect to BoilingData WebSocket API"""
-        if self.websocket is not None:
-            raise Exception("WebSocket already exists")
+        if self.bd_is_open is True:
+            self.logger.debug("Already open, not re-connecting.")
+            return
         self.logger.info("Connecting")
         self.websocket = websocket.WebSocket()
         websocket.enableTrace(self.ws_trace)
