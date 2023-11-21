@@ -18,8 +18,8 @@ from py_boilingdata.data_queue import DataQueue
 AWS_REGION = os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "eu-west-1"))
 USER_POOL_ID = "eu-west-1_0GLV9KO1p"
 CLIENT_ID = "37f44ql7bp5p8fpk5qrh2sgu8"
-# BOILING_WSS_URL = "wss://4rpyi2ae3f.execute-api.eu-west-1.amazonaws.com/prodbd/"
-BOILING_WSS_URL = "wss://e4f3t7fs58.execute-api.eu-west-1.amazonaws.com/devbd/"
+BOILING_WSS_URL = "wss://4rpyi2ae3f.execute-api.eu-west-1.amazonaws.com/prodbd/"
+# BOILING_WSS_URL = "wss://e4f3t7fs58.execute-api.eu-west-1.amazonaws.com/devbd/"
 IDP_URL = "cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0GLV9KO1p"
 IDENTITY_POOL_ID = "eu-west-1:bce21571-e3a6-47a4-8032-fd015213405f"
 BOILING_SEARCH_TERMS = [
