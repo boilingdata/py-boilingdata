@@ -16,7 +16,6 @@ from py_boilingdata.data_queue import DataQueue
 # Preview environment in eu-west-1
 # TODO: Put in dotenv for example
 AWS_REGION = os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "eu-west-1"))
-USER_POOL_ID = "eu-west-1_0GLV9KO1p"
 CLIENT_ID = "37f44ql7bp5p8fpk5qrh2sgu8"
 BOILING_WSS_URL = "wss://4rpyi2ae3f.execute-api.eu-west-1.amazonaws.com/prodbd/"
 # BOILING_WSS_URL = "wss://e4f3t7fs58.execute-api.eu-west-1.amazonaws.com/devbd/"
@@ -158,10 +157,9 @@ class BoilingDataConnection:
 
     def _get_cognito_tokens(self, username, password):
         try:
-            response = self.idp_client.admin_initiate_auth(
-                UserPoolId=USER_POOL_ID,
+            response = self.idp_client.initiate_auth(
                 ClientId=CLIENT_ID,
-                AuthFlow="ADMIN_USER_PASSWORD_AUTH",
+                AuthFlow="USER_PASSWORD_AUTH",
                 AuthParameters={"USERNAME": username, "PASSWORD": password},
             )
             return response["AuthenticationResult"]
@@ -175,7 +173,7 @@ class BoilingDataConnection:
             self.logger.error(e)
             self.logger.error("Credentials not available.")
             raise e
-        except:
+        except Exception as e:
             self.logger.error(e)
             raise e
 
