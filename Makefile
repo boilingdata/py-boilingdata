@@ -18,4 +18,4 @@ run:
 	poetry run python main.py
 
 notebook:
-	jupyter notebook boilingdata.ipynb
+	jupyter lab boilingdata.ipynb
