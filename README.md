@@ -4,13 +4,17 @@
 pip install git+https://github.com/boilingdata/py-boilingdata
 ```
 
+- Please see a demo Notebook [bolingdata.ipynb](boilingdata.ipynb) (`make notebook`)
+
+## Introduction and basic example
+
 A python client for sending SQL queries and receive results from BoilingData WebSockets API.
 
 - This package uses `asyncio` and `threads` to make the `websocket.WebSocketApp()` run on the background.
 - For example usage, please see tests and [main.py](main.py). You can run the main.py with `make run`.
 - [`DataQueue class`](py_boilingdata/data_queue.py) is used for book keeping all incoming `DATA` messages and when all pieces are in place, order them and pass back via callback function.
 
-> **NOTE:** This package is considered experimental. Feel free to suggest improvements, especially on how to make this module easy to use.
+> **NOTE:** This package is considered experimental. Feel free to suggest improvements, especially on how to make this module easier to use and more efficient.
 
 ```python
 import os
@@ -35,10 +39,6 @@ async def main():
 
 asyncio.new_event_loop().run_until_complete(main())
 ```
-
-## Notebook
-
-Please see [bolingdata.ipynb](boilingdata.ipynb)
 
 ## Development
 
