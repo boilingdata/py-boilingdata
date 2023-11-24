@@ -11,6 +11,7 @@ from botocore.exceptions import NoCredentialsError
 from botocore.awsrequest import AWSRequest
 from botocore.credentials import Credentials
 from py_boilingdata.data_queue import DataQueue
+from pycognito import AWSSRP
 
 
 # Preview environment in eu-west-1
@@ -20,6 +21,7 @@ CLIENT_ID = "37f44ql7bp5p8fpk5qrh2sgu8"
 BOILING_WSS_URL = "wss://4rpyi2ae3f.execute-api.eu-west-1.amazonaws.com/prodbd/"
 # BOILING_WSS_URL = "wss://e4f3t7fs58.execute-api.eu-west-1.amazonaws.com/devbd/"
 IDP_URL = "cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0GLV9KO1p"
+USER_POOL_ID = "eu-west-1_0GLV9KO1p"
 IDENTITY_POOL_ID = "eu-west-1:bce21571-e3a6-47a4-8032-fd015213405f"
 BOILING_SEARCH_TERMS = [
     "'s3://",
@@ -157,10 +159,31 @@ class BoilingDataConnection:
 
     def _get_cognito_tokens(self, username, password):
         try:
+            aws_srp = AWSSRP(
+                username=username,
+                password=password,
+                pool_id=USER_POOL_ID,
+                client_id=CLIENT_ID,
+                client=self.idp_client,
+            )
+            auth_params = aws_srp.get_auth_params()
             response = self.idp_client.initiate_auth(
                 ClientId=CLIENT_ID,
-                AuthFlow="USER_PASSWORD_AUTH",
-                AuthParameters={"USERNAME": username, "PASSWORD": password},
+                AuthFlow="USER_SRP_AUTH",
+                AuthParameters=auth_params,
+            )
+            if response["ChallengeName"] != "PASSWORD_VERIFIER":
+                raise ValueError(
+                    "Received unkonwn challenge from AWS Cognito, "
+                    + "this module does not yet support MFA"
+                )
+            challenge_response = aws_srp.process_challenge(
+                response["ChallengeParameters"], auth_params
+            )
+            response = self.idp_client.respond_to_auth_challenge(
+                ClientId=CLIENT_ID,
+                ChallengeName="PASSWORD_VERIFIER",
+                ChallengeResponses=challenge_response,
             )
             return response["AuthenticationResult"]
         except self.idp_client.exceptions.NotAuthorizedException as e:

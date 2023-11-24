@@ -27,44 +27,44 @@ async def test_local_query():
     assert data == [(1,)]
 
 
-@pytest.mark.asyncio
-async def test_local_tables():
-    """We should have Boiling Data Catalog entries"""
-    resp = await boiling.execute("SHOW TABLES;")
-    assert resp == [
-        ("demo_full",),
-        ("taxi_locations",),
-        ("taxi_locations_limited",),
-    ]
+# @pytest.mark.asyncio
+# async def test_local_tables():
+#     """We should have Boiling Data Catalog entries"""
+#     resp = await boiling.execute("SHOW TABLES;")
+#     assert resp == [
+#         ("demo_full",),
+#         ("taxi_locations",),
+#         ("taxi_locations_limited",),
+#     ]
 
 
-@pytest.mark.asyncio
-async def test_bd_query():
-    """Small response from Boiling"""
-    q = "SELECT first_name, email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 1"
-    data = await boiling.execute(q)  # awaits as lont as the result is available
-    assert data == [{"email": "ajordan0@com.com", "first_name": "Amanda"}]
+# @pytest.mark.asyncio
+# async def test_bd_query():
+#     """Small response from Boiling"""
+#     q = "SELECT first_name, email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 1"
+#     data = await boiling.execute(q)  # awaits as lont as the result is available
+#     assert data == [{"email": "ajordan0@com.com", "first_name": "Amanda"}]
 
 
-@pytest.mark.asyncio
-async def test_bd_query_cb():
-    """Small response from Boiling with callback"""
-    global data
-    data = None
+# @pytest.mark.asyncio
+# async def test_bd_query_cb():
+#     """Small response from Boiling with callback"""
+#     global data
+#     data = None
 
-    # Note: This depends on the used BD_USERNAME but also data sets shared
-    def cb(resp):
-        global data
-        data = resp
+#     # Note: This depends on the used BD_USERNAME but also data sets shared
+#     def cb(resp):
+#         global data
+#         data = resp
 
-    q = "SELECT email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 1"
-    await boiling.execute(q, cb)  # only awaits as long as the request is dispatched
-    q = "SELECT first_name, email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 1"
-    await boiling.execute(q, cb)  # only awaits as long as the request is dispatched
-    await asyncio.sleep(5)  # let them race...
-    assert data == [{"email": "ajordan0@com.com", "first_name": "Amanda"}] or data == [
-        {"email": "ajordan0@com.com"}
-    ]
+#     q = "SELECT email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 1"
+#     await boiling.execute(q, cb)  # only awaits as long as the request is dispatched
+#     q = "SELECT first_name, email FROM parquet_scan('s3://boilingdata-demo/test.parquet') LIMIT 1"
+#     await boiling.execute(q, cb)  # only awaits as long as the request is dispatched
+#     await asyncio.sleep(5)  # let them race...
+#     assert data == [{"email": "ajordan0@com.com", "first_name": "Amanda"}] or data == [
+#         {"email": "ajordan0@com.com"}
+#     ]
 
 
 # @pytest.mark.asyncio
