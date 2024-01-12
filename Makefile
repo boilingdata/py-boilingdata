@@ -18,4 +18,5 @@ run:
 	poetry run python main.py
 
 notebook:
+	pip install jupyterlab-requirements
 	jupyter lab boilingdata.ipynb
