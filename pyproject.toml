@@ -3,7 +3,7 @@ asyncio_mode = "auto"
 
 [tool.poetry]
 name = "py-boilingdata"
-version = "0.2.11"
+version = "0.2.12"
 description = "BoilingData (websockets) client for Python"
 authors = ["Dan Forsberg <dan@boilingdata.com>"]
 readme = "README.md"
@@ -13,7 +13,7 @@ python = "^3.10"
 boto3 = "^1.29.1"
 asyncio = "^3.4.3"
 botocore = "^1.32.1"
-duckdb = "^0.9.2"
+duckdb = "^1.0.0"
 uuid = "^1.30"
 pytest-snapshot = "^0.9.0"
 websocket-client = "^1.6.4"

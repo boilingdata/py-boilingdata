@@ -12,6 +12,7 @@ lint: format
 	poetry run pylint py_boilingdata/*.py
 
 build:
+	rm -rf dist/
 	poetry build
 
 run:
